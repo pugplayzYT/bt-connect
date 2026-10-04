@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/build/
+**/.gradle/
+android/local.properties
+.idea/
+.vs/
+artifacts/
+*.user
+*.jks
+*.keystore

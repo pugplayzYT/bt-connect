@@ -1,0 +1,14 @@
+<Window x:Class="BtConnect.Server.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="BT Connect" Width="680" Height="620" MinWidth="560" MinHeight="500" Background="#101827" Foreground="#F1F5F9">
+ <Grid Margin="28">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel><TextBlock Text="BT Connect" FontSize="30" FontWeight="Bold"/><TextBlock Text="One computer. A shared conversation." Foreground="#94A3B8" Margin="0,4,0,20"/></StackPanel>
+  <StackPanel Grid.Row="1" Orientation="Horizontal"><Button x:Name="ServerButton" Content="Start server" Click="ToggleServer"/><TextBlock x:Name="ServerStatus" Text="Server stopped" VerticalAlignment="Center" TextWrapping="Wrap"/></StackPanel>
+  <StackPanel Grid.Row="2" Margin="0,18,0,12"><TextBlock x:Name="ConnectionCount" Text="0 devices connected" FontWeight="Bold"/><TextBlock x:Name="DeviceNames" Foreground="#94A3B8" TextWrapping="Wrap"/></StackPanel>
+  <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12"><Button x:Name="AudioButton" Content="Broadcast microphone" Click="ToggleAudio" IsEnabled="False"/><TextBlock x:Name="AudioStatus" Text="Chat only" VerticalAlignment="Center"/></StackPanel>
+  <TextBlock Grid.Row="4" Text="CHAT" Foreground="#94A3B8" Margin="0,10,0,8"/>
+  <ListBox x:Name="ChatLog" Grid.Row="5" Background="#1E293B" Foreground="#F1F5F9" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+    <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="8"/></DataTemplate></ListBox.ItemTemplate>
+  </ListBox>
+  <Grid Grid.Row="6" Margin="0,16,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="MessageInput" MaxLength="400" Padding="10" KeyDown="MessageKeyDown"/><Button Grid.Column="1" x:Name="SendButton" Content="Send" Margin="10,0,0,0" Click="SendMessage" IsEnabled="False"/></Grid>
+ </Grid>
+</Window>

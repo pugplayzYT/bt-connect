@@ -79,6 +79,8 @@ jobs:
 
           Enable a Bluetooth Classic adapter in Windows and start the server. On Android grant Nearby devices (or Location on Android 8–11), find the server, and confirm OS pairing. The computer can send chat and broadcast its default microphone; phones play the audio with chat visible below it.
 
+          If the server list is empty but the devices are already paired, use Connect to paired computer and select your PC. This build also advertises the server in the public Bluetooth service browse group and accepts delayed discovery responses.
+
           This APK uses a development signing key. You may need to uninstall an earlier development APK before installing this one; do not rely on preview-to-preview in-place updates. Production signing is a separate, configured release path.
 
           Turn Bluetooth on in Windows Settings > Bluetooth & devices before clicking Start server. Hardware discovery, pairing and sound still require testing on your Windows/Android devices.

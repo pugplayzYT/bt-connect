@@ -19,6 +19,9 @@ chat stays visible below it. Stopping audio returns the display to **Chat only**
    UUID, not every Bluetooth device. Tap one to connect and accept pairing prompts.
    Pair the phone and computer through OS Bluetooth Settings first if connection
    or service discovery fails.
+   If your paired computer is missing from the list, tap **Connect to paired computer**
+   and select it directly. This still connects using the BT Connect service UUID;
+   a computer without the running server cannot accept the connection.
 4. Send a message or click **Broadcast microphone** on the computer. Turn up the
    phone's media volume. A phone joining an active broadcast starts playback too.
 5. Stop broadcasting to return to chat, or disconnect. Closing the computer server

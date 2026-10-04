@@ -10,6 +10,9 @@ Windows WPF rendering, adapter drivers, SDP discovery, OS pairing, or actual sou
 2. On Android 8–11 enable Location and grant the location permission; on Android
    12+ grant Nearby devices. Deny permission once and verify the explanation.
    Scan: non-BT Connect devices must be excluded.
+   With a paired computer, check cached and fresh service discovery. If the automatic
+   list is empty, use Connect to paired computer and verify the connection succeeds
+   only when that computer runs BT Connect.
 3. Pair/confirm prompts, connect phone A, then B. Every screen should show counts
    1 then 2. Disconnect B: Windows and A should show 1. Reconnect B.
 4. Send computer and phone chat including emoji. Both phones and the computer

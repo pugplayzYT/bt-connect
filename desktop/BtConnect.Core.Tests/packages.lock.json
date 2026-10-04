@@ -2,6 +2,15 @@
   "version": 1,
   "dependencies": {
     "net8.0": {
+      "InTheHand.Net.Bluetooth": {
+        "type": "Direct",
+        "requested": "[4.1.44, )",
+        "resolved": "4.1.44",
+        "contentHash": "gRPCmVpYklhn/JkiJpoV2ZExw740csai+o+IgsUn/4igeMOO848uUIXTaN8UDSMGj69T9ZeLYCTYF/dHaJnteg==",
+        "dependencies": {
+          "Linux.Bluetooth": "5.66.0"
+        }
+      },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
         "requested": "[17.11.1, )",
@@ -28,6 +37,14 @@
         "requested": "[2.8.2, )",
         "resolved": "2.8.2",
         "contentHash": "vm1tbfXhFmjFMUmS4M0J0ASXz3/U5XvXBa6DOQUL3fEz4Vt6YPhv+ESCarx6M6D+9kJkJYZKCNvJMas1+nVfmQ=="
+      },
+      "Linux.Bluetooth": {
+        "type": "Transitive",
+        "resolved": "5.66.0",
+        "contentHash": "psisT3X/CjSGdKCHLb2IzcYGFSCp8q/yZKJLp0X8Fzaeb0MQHkHURpzltBsDOXbuABZ2qWW1i3oaqfkCfTPxwg==",
+        "dependencies": {
+          "Tmds.DBus": "0.15.0"
+        }
       },
       "Microsoft.CodeCoverage": {
         "type": "Transitive",
@@ -60,6 +77,11 @@
         "type": "Transitive",
         "resolved": "1.6.0",
         "contentHash": "COC1aiAJjCoA5GBF+QKL2uLqEBew4JsCkQmoHKbN3TlOZKa2fKLz5CpiRQKDz0RsAOEGsVKqOD5bomsXq/4STQ=="
+      },
+      "Tmds.DBus": {
+        "type": "Transitive",
+        "resolved": "0.15.0",
+        "contentHash": "11BxHGh+8hwXNdcavX7BxNW5Qr6AC36ABYDcqvZ3bDS7alXI+O95/x0ExoVWWWxjAVTnvmDRtW1Nd3uObPIsVg=="
       },
       "xunit.abstractions": {
         "type": "Transitive",

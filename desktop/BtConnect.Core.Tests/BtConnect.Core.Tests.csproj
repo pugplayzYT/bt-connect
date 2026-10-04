@@ -5,6 +5,8 @@
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2"><PrivateAssets>all</PrivateAssets></PackageReference>
     <ProjectReference Include="../BtConnect.Core/BtConnect.Core.csproj" />
+    <PackageReference Include="InTheHand.Net.Bluetooth" Version="4.1.44" />
+    <Compile Include="../BtConnect.Server/BluetoothAdvertisement.cs" Link="BluetoothAdvertisement.cs" />
     <None Include="../../protocol/fixtures.txt" Link="fixtures.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

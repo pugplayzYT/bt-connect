@@ -25,7 +25,7 @@ public sealed class BluetoothHost : IAsyncDisposable
         try
         {
             radio.Mode = RadioMode.Discoverable;
-            listener = new BluetoothListener(Protocol.ServiceId) { ServiceName = "BT Connect" };
+            listener = new BluetoothListener(Protocol.ServiceId, BluetoothAdvertisement.Create());
             listener.Start();
             acceptTask = Task.Run(AcceptLoop);
             return radio.Name;

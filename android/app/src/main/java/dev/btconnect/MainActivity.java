@@ -3,6 +3,7 @@ package dev.btconnect;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.*;
 import android.content.*;
 import android.content.pm.PackageManager;
@@ -27,7 +28,7 @@ public final class MainActivity extends Activity {
     private EditText input;
     private Button scan, disconnect, send;
     private final Map<String,BluetoothDevice> candidates=new LinkedHashMap<>();
-    private final Set<String> listed=new HashSet<>();
+    private final DiscoverySession discoverySession=new DiscoverySession();
     private final ArrayDeque<BluetoothDevice> probes=new ArrayDeque<>();
     private BluetoothDevice probing;
     private final Runnable probeTimeout=() -> { probing=null; probeNext(); };
@@ -61,6 +62,7 @@ public final class MainActivity extends Activity {
         LinearLayout actions=new LinearLayout(this);
         scan=button("Find servers"); scan.setOnClickListener(v -> scan()); actions.addView(scan);
         disconnect=button("Disconnect"); disconnect.setEnabled(false); disconnect.setOnClickListener(v -> disconnect("Disconnected")); actions.addView(disconnect); root.addView(actions);
+        Button paired=button("Connect to paired computer"); paired.setOnClickListener(v -> choosePairedComputer()); root.addView(paired);
         discovery=label("Start the server on your computer, then scan.",14); root.addView(discovery);
         ScrollView serverScroll=new ScrollView(this); servers=new LinearLayout(this); servers.setOrientation(LinearLayout.VERTICAL); serverScroll.addView(servers);
         root.addView(serverScroll,new LinearLayout.LayoutParams(-1,dp(120)));
@@ -97,31 +99,45 @@ public final class MainActivity extends Activity {
     }
     private void scan() {
         if(!ready() || connection!=null) return;
-        stopScan(); candidates.clear(); listed.clear(); servers.removeAllViews();
-        for(BluetoothDevice device:adapter.getBondedDevices()) candidates.put(device.getAddress(),device);
+        stopScan(); candidates.clear(); servers.removeAllViews(); discoverySession.begin();
+        for(BluetoothDevice device:adapter.getBondedDevices()) {
+            candidates.put(device.getAddress(),device); discoverySession.candidate(device.getAddress());
+            considerServices(device,device.getUuids());
+        }
         scanning=true; discovery.setText("Searching nearby computers…");
         if(!adapter.startDiscovery()) { discovery.setText("Discovery unavailable. Check Bluetooth and, on Android 8–11, enable Location."); beginProbes(); }
     }
     private void stopScan() {
-        scanning=false; probing=null; probes.clear(); ui.removeCallbacks(probeTimeout);
+        scanning=false; discoverySession.stop(); probing=null; probes.clear(); ui.removeCallbacks(probeTimeout);
         if(adapter!=null && permissionsGranted() && adapter.isDiscovering()) adapter.cancelDiscovery();
     }
     private final BroadcastReceiver receiver=new BroadcastReceiver() {
         @Override public void onReceive(Context context,Intent intent) {
-            if(!scanning || !permissionsGranted()) return;
+            if(!permissionsGranted()) return;
             BluetoothDevice device=intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            if(BluetoothDevice.ACTION_FOUND.equals(intent.getAction()) && device!=null) candidates.put(device.getAddress(),device);
-            else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(intent.getAction()) && !adapter.isDiscovering() && probing==null && probes.isEmpty()) beginProbes();
-            else if(BluetoothDevice.ACTION_UUID.equals(intent.getAction()) && device!=null && probing!=null && device.getAddress().equals(probing.getAddress())) {
+            if(BluetoothDevice.ACTION_UUID.equals(intent.getAction()) && device!=null) {
                 Parcelable[] uuids=intent.getParcelableArrayExtra(BluetoothDevice.EXTRA_UUID);
-                if(matches(uuids)) addServer(device);
-                ui.removeCallbacks(probeTimeout); probing=null; probeNext();
+                considerServices(device,uuids);
+                if(scanning && probing!=null && device.getAddress().equals(probing.getAddress())) {
+                    ui.removeCallbacks(probeTimeout); probing=null; probeNext();
+                }
+                return;
             }
+            if(!scanning) return;
+            if(BluetoothDevice.ACTION_FOUND.equals(intent.getAction()) && device!=null) {
+                candidates.put(device.getAddress(),device); discoverySession.candidate(device.getAddress());
+                considerServices(device,device.getUuids());
+            }
+            else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(intent.getAction()) && !adapter.isDiscovering() && probing==null && probes.isEmpty()) beginProbes();
         }
     };
-    private boolean matches(Parcelable[] uuids) {
-        if(uuids!=null) for(Parcelable uuid:uuids) if(uuid instanceof ParcelUuid && Protocol.SERVICE_ID.equals(((ParcelUuid)uuid).getUuid())) return true;
-        return false;
+    private void considerServices(BluetoothDevice device,Parcelable[] values) {
+        ArrayList<UUID> uuids=new ArrayList<>();
+        if(values!=null) for(Parcelable value:values) if(value instanceof ParcelUuid) uuids.add(((ParcelUuid)value).getUuid());
+        if(discoverySession.services(device.getAddress(),uuids.toArray(new UUID[0]))) {
+            addServer(device);
+            if(!scanning) discovery.setText("Tap a computer to connect.");
+        }
     }
     private void beginProbes() {
         if(!scanning) return;
@@ -131,16 +147,31 @@ public final class MainActivity extends Activity {
     private void probeNext() {
         if(!scanning) return;
         BluetoothDevice device=probes.poll();
-        if(device==null) { scanning=false; discovery.setText(listed.isEmpty() ? "No servers found. Start the computer server and pair in Bluetooth Settings, then scan again." : "Tap a computer to connect."); return; }
-        // Fresh SDP lookup prevents showing a paired computer whose server has stopped.
+        if(device==null) { scanning=false; discovery.setText(discoverySession.count()==0 ? "No servers found yet. Pair the computer in Bluetooth Settings, then use Connect to paired computer. Late responses can still appear." : "Tap a computer to connect."); return; }
+        // Refresh cached services after inquiry; delayed responses remain valid for this scan.
         probing=device;
-        if(device.fetchUuidsWithSdp()) ui.postDelayed(probeTimeout,6000);
+        discovery.setText("Checking "+(device.getName()==null ? device.getAddress() : device.getName())+" for BT Connect…");
+        if(device.fetchUuidsWithSdp()) ui.postDelayed(probeTimeout,10000);
         else { probing=null; ui.post(this::probeNext); }
     }
     private void addServer(BluetoothDevice device) {
-        if(!listed.add(device.getAddress())) return;
         Button b=button((device.getName()==null ? "Computer" : device.getName())+"\n"+device.getAddress());
         b.setOnClickListener(v -> connect(device)); servers.addView(b);
+    }
+    private void choosePairedComputer() {
+        if(!ready() || connection!=null) return;
+        ArrayList<BluetoothDevice> devices=new ArrayList<>(adapter.getBondedDevices());
+        if(devices.isEmpty()) {
+            new AlertDialog.Builder(this).setTitle("Pair your computer first")
+                .setMessage("Open Bluetooth Settings on both devices and pair them. Start BT Connect on the computer, then come back here.")
+                .setPositiveButton("Bluetooth Settings",(dialog,which) -> startActivity(new Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)))
+                .setNegativeButton("Cancel",null).show(); return;
+        }
+        String[] names=new String[devices.size()];
+        for(int i=0;i<devices.size();i++) names[i]=(devices.get(i).getName()==null ? "Paired device" : devices.get(i).getName())+"\n"+devices.get(i).getAddress();
+        new AlertDialog.Builder(this).setTitle("Choose your paired computer")
+            .setItems(names,(dialog,which) -> connect(devices.get(which)))
+            .setNegativeButton("Cancel",null).show();
     }
     private void connect(BluetoothDevice device) {
         if(!ready() || connection!=null) return;

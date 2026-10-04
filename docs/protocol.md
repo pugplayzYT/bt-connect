@@ -3,6 +3,11 @@
 BT Connect advertises a Bluetooth Classic RFCOMM SDP service with UUID
 `84c39d30-2f4b-4d7f-9d81-40c18b587830` and service name `BT Connect`.
 Android discovers nearby computers, checks their SDP UUIDs, and lists only matches.
+The service record includes the public browse group UUID `0x1002` so generic SDP
+browse can discover the custom service. Android checks paired devices' cached
+service UUIDs and accepts delayed SDP responses until the scan is explicitly stopped.
+Users can also select a paired computer directly when generic browsing fails;
+the RFCOMM connection still targets the same custom service UUID.
 Use secure RFCOMM sockets; accept the OS pairing prompts. This is an application
 stream, not an A2DP headset profile.
 

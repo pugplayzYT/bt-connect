@@ -29,8 +29,13 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '13114758'
+          accept-android-sdk-licenses: false
+          packages: ''
+      - name: Accept SDK licenses and install required packages
+        run: bash scripts/prepare-android-sdk.sh
       - uses: gradle/actions/setup-gradle@v4
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
         working-directory: android
       - uses: actions/upload-artifact@v4

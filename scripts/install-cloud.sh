@@ -40,13 +40,7 @@ if ! [ -x "$ANDROID_HOME/cmdline-tools/19.0/bin/sdkmanager" ]; then
     mkdir -p "$ANDROID_HOME/cmdline-tools"
     mv "$task_downloads/android/cmdline-tools" "$ANDROID_HOME/cmdline-tools/19.0"
 fi
-# Reproducible noninteractive license acceptance (sdkmanager returns the status).
-python3 - <<'PY'
-import subprocess, os
-command=[os.environ['ANDROID_HOME']+'/cmdline-tools/19.0/bin/sdkmanager','--sdk_root='+os.environ['ANDROID_HOME'],'--licenses']
-subprocess.run(command,input='y\n'*100,text=True,check=True)
-PY
-sdkmanager --sdk_root="$ANDROID_HOME" 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+bash scripts/prepare-android-sdk.sh
 dotnet restore desktop/BtConnect.Core.Tests/BtConnect.Core.Tests.csproj --locked-mode
 dotnet restore desktop/BtConnect.Server/BtConnect.Server.csproj --locked-mode
 dotnet test desktop/BtConnect.Core.Tests/BtConnect.Core.Tests.csproj -c Release --no-restore

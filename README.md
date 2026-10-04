@@ -62,13 +62,20 @@ Use the existing checkout; a separate Git worktree is unnecessary.
 
 ## Releases
 
+Downloads are under [GitHub Releases](https://github.com/pugplayzYT/bt-connect/releases).
+Tags such as `v0.1.0-preview.1` publish a **development preview** with the standalone
+Windows EXE/ZIP, a development-signed Android APK, and checksums. Both platforms'
+checks must pass before publication. Preview signing keys can change between runs;
+uninstall an older development APK if Android rejects the update. Production tags
+exclude preview tags and use the persistent signing configuration below.
+
 The GitHub Actions release workflow tests both platforms, builds a self-contained
 Windows x64 EXE and ZIP, builds and verifies a signed Android release APK, then
 attaches all three and `SHA256SUMS.txt` to one GitHub Release. Publication happens
 only when both builds succeed. CI on main / pull requests also runs tests and
 uploads development artifacts without publishing a release.
 
-Before pushing the first version tag, configure these **GitHub repository Actions
+Before pushing the first production version tag, configure these **GitHub repository Actions
 secrets** (never commit a keystore or put passwords in chat):
 
 - `ANDROID_KEYSTORE_BASE64`: base64 of your persistent release keystore.
@@ -83,6 +90,12 @@ Push a tag such as `v0.1.0` to run the release workflow. `versionName` comes fro
 the tag and `versionCode` uses the release workflow's increasing run number.
 Re-run failed builds on the same tag before a release is published; after publication
 use a new version tag for changes. The workflow does not overwrite an existing release.
+
+If Windows reports that it cannot access a Bluetooth Classic adapter, turn Bluetooth
+on in Settings > Bluetooth & devices. If the switch is missing, check Device Manager
+and the adapter driver; a computer without built-in Bluetooth needs a suitable USB
+adapter. Startup errors identify whether radio discovery, discoverability, or the
+RFCOMM service failed. A successful build cannot verify hardware availability.
 
 ## Validation
 

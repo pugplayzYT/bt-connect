@@ -1,0 +1,88 @@
+name: Preview release APK and EXE
+on:
+  push:
+    tags: ['v*-preview*']
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet test desktop/BtConnect.Core.Tests/BtConnect.Core.Tests.csproj -c Release -p:RestoreLockedMode=true
+      - run: dotnet publish desktop/BtConnect.Server/BtConnect.Server.csproj -c Release -p:RestoreLockedMode=true -o artifacts/windows
+      - shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts/release | Out-Null
+          Copy-Item artifacts/windows/BtConnect.exe artifacts/release/BT-Connect-Windows-x64.exe
+          Compress-Archive -Path artifacts/windows/* -DestinationPath artifacts/release/BT-Connect-Windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-preview
+          path: artifacts/release/*
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '13114758'
+          accept-android-sdk-licenses: false
+          packages: ''
+      - run: bash scripts/prepare-android-sdk.sh
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build and test development APK
+        working-directory: android
+        env:
+          BT_VERSION_NAME: ${{ github.ref_name }}
+        run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+      - name: Verify and collect development APK
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/debug/app-debug.apk
+          mkdir -p artifacts/release
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/release/BT-Connect-Android-preview.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-preview
+          path: artifacts/release/*
+  publish:
+    needs: [windows, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-preview'
+          merge-multiple: true
+          path: release
+      - name: Publish preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          cd release
+          sha256sum BT-Connect-* > SHA256SUMS.txt
+          cat > RELEASE_NOTES.md <<'NOTES'
+          BT Connect development preview: Windows Bluetooth chat/microphone server and Android client.
+
+          Download BT-Connect-Windows-x64.exe and BT-Connect-Android-preview.apk below. The Windows ZIP contains the same app with debugging symbols.
+
+          Enable a Bluetooth Classic adapter in Windows and start the server. On Android grant Nearby devices (or Location on Android 8–11), find the server, and confirm OS pairing. The computer can send chat and broadcast its default microphone; phones play the audio with chat visible below it.
+
+          This APK uses a development signing key. You may need to uninstall an earlier development APK before installing this one; do not rely on preview-to-preview in-place updates. Production signing is a separate, configured release path.
+
+          If Windows cannot start, the app reports the failed Bluetooth startup step. Check the Bluetooth switch and adapter driver in Windows Settings/Device Manager. Hardware discovery, pairing and sound still require testing on your Windows/Android devices.
+
+          Automated C# and Android tests, lint, APK signature verification and both builds must pass before this preview is published.
+          NOTES
+          gh release create "$RELEASE_TAG" --verify-tag --prerelease --title "BT Connect $RELEASE_TAG (preview)" --notes-file RELEASE_NOTES.md BT-Connect-* SHA256SUMS.txt

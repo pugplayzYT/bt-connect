@@ -14,40 +14,23 @@ public sealed class BluetoothHost : IAsyncDisposable
     private BluetoothListener? listener;
     private BluetoothRadio? radio;
     private RadioMode previousMode;
-    private bool restoreRadioMode;
     private readonly CancellationTokenSource lifetime = new();
     private readonly ConcurrentDictionary<BluetoothClient, Task> sessions = new();
     private Task? acceptTask;
 
     public string Start()
     {
-        var stage = "finding the Bluetooth adapter";
+        radio = BluetoothRadio.Default ?? throw new InvalidOperationException("No Bluetooth adapter found. Enable Bluetooth in Windows Settings.");
+        previousMode = radio.Mode;
         try
         {
-            try { radio = BluetoothRadio.Default; }
-            catch (PlatformNotSupportedException e)
-            {
-                throw new InvalidOperationException("Windows could not access a Bluetooth Classic adapter. Turn Bluetooth on in Settings > Bluetooth & devices. If there is no Bluetooth switch, check the adapter/driver in Device Manager or connect a Bluetooth Classic USB adapter.", e);
-            }
-            if (radio is null) throw new InvalidOperationException("No Bluetooth adapter found. Enable Bluetooth in Windows Settings.");
-            var name = radio.Name;
-            stage = "reading the adapter state";
-            previousMode = radio.Mode;
-            stage = "making the computer discoverable";
-            restoreRadioMode = true;
             radio.Mode = RadioMode.Discoverable;
-            stage = "opening the Bluetooth RFCOMM service";
             listener = new BluetoothListener(Protocol.ServiceId) { ServiceName = "BT Connect" };
             listener.Start();
             acceptTask = Task.Run(AcceptLoop);
-            return name;
+            return radio.Name;
         }
-        catch (Exception e)
-        {
-            try { listener?.Stop(); } catch (Exception cleanup) { Message?.Invoke("Listener cleanup: " + cleanup.Message); }
-            RestoreRadio();
-            throw new InvalidOperationException($"Bluetooth startup failed while {stage}: {e.Message}", e);
-        }
+        catch { listener?.Stop(); radio.Mode = previousMode; throw; }
     }
     private async Task AcceptLoop()
     {
@@ -124,14 +107,7 @@ public sealed class BluetoothHost : IAsyncDisposable
         foreach (var client in sessions.Keys) client.Close();
         if (acceptTask is not null) await acceptTask;
         await Task.WhenAll(sessions.Values);
-        RestoreRadio();
+        if (radio is not null) radio.Mode = previousMode;
         lifetime.Dispose();
-    }
-    private void RestoreRadio()
-    {
-        if (!restoreRadioMode || radio is null) return;
-        restoreRadioMode = false;
-        try { radio.Mode = previousMode; }
-        catch (Exception e) { Message?.Invoke("Could not restore Bluetooth discoverability: " + e.Message); }
     }
 }

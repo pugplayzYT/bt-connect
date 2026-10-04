@@ -91,12 +91,6 @@ the tag and `versionCode` uses the release workflow's increasing run number.
 Re-run failed builds on the same tag before a release is published; after publication
 use a new version tag for changes. The workflow does not overwrite an existing release.
 
-If Windows reports that it cannot access a Bluetooth Classic adapter, turn Bluetooth
-on in Settings > Bluetooth & devices. If the switch is missing, check Device Manager
-and the adapter driver; a computer without built-in Bluetooth needs a suitable USB
-adapter. Startup errors identify whether radio discovery, discoverability, or the
-RFCOMM service failed. A successful build cannot verify hardware availability.
-
 ## Validation
 
 Automated tests cover shared wire fixtures, fragmented and concatenated reads,
